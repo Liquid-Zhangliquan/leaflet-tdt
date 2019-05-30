@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Leaflet-天地图</title>
+    <link data-n-head="true" rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <link rel="stylesheet" href="css/index.css" />
+    <script src="js/jquery.min.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/tileLayer.wmts.js"></script>
+    <!-- <script src="js/amap.js"></script> -->
+    <!-- <script src="http://webapi.amap.com/maps?v=1.4.2&key=ab3244be212785f92aadbf0f8146b13a"></script> -->
+</head>
+
+<body>
+
+    <div id="map">
+        <div class="poi-Container">
+            <div class="form-item">
+                <div class="search-container">
+                    <div class="search-input"> <input class="input-item" type="text"></div>
+
+                </div>
+                <div class="btn-item">
+                    <div class="search-btn"></div>
+                    <div class="close-btn"></div>
+                </div>
+            </div>
+            <div class="res-list">
+            </div>
+        </div>
+        <div class="layer-controlbox-container">
+            <div class="layer-pane">
+                <i class="layer-switch-close"></i>
+                <h3>选择底图</h3>
+                <div class="layer-items">
+                    <a href="javascript:void(0);" id="vec_type" class="active">
+                        <img src="images/map-layer/vec.jpg">
+                        地图
+                    </a>
+                    <a href="javascript:void(0);" id="img_type" class="">
+                        <img src="images/map-layer/img.jpg">
+                        影像
+                    </a>
+                    <a href="javascript:void(0);" id="ter_type" class="">
+                        <img src="images/map-layer/ter.jpg">
+                        地形
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="layer-controlbtn-container">
+            <div class="layer-control-btn"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var map;
+        var limark;
+        var ak = "1072d95046f18e67463ce40d645a9b8d";
+        var baselayer = [L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/vec_w/wmts", {
+            subdomains: "0123456",
+            layer: "vec",
+            style: "default",
+            tilematrixSet: "w",
+            format: "tiles",
+            tk: ak
+        }),
+        L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/cva_w/wmts", {
+            subdomains: "0123456",
+            layer: "cva",
+            style: "default",
+            tilematrixSet: "w",
+            format: "tiles",
+            tk: ak
+        })];
+        var LayerConfig = {
+            "vec_type": [
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/vec_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "vec",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                }),
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/cva_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "cva",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                })
+            ],
+            "img_type": [
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/img_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "img",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                }),
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/cia_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "cia",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                })
+            ],
+            "ter_type": [
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/ter_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "ter",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                }),
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/tbo_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "tbo",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                }),
+                L.tileLayer.wmts("http://t{s}.tianditu.gov.cn/cta_w/wmts", {
+                    subdomains: "0123456",
+                    layer: "cta",
+                    style: "default",
+                    tilematrixSet: "w",
+                    format: "tiles",
+                    tk: ak
+                })
+            ]
+        };
+        //初始化地图'
+        $(document).ready(function () {
+            LeafletMapInit()
+            //头部搜索
+            $('.close-btn').hide();
+            $('.input-item').bind('keypress', function (event) {
+                if (event.keyCode == "13") {
+                    var text = $('.input-item').val();
+                    if (text) {
+                        QueryPOI(text);
+                    } else {
+                        alert('请选择要查询的poi');
+                    }
+                }
+            });
+            $('.search-btn').unbind('click').bind('click', function () {
+                var text = $('.input-item').val();
+                if (text) {
+                    QueryPOI(text);
+                } else {
+                    alert('请选择要查询的poi');
+                }
+            })
+
+            $('.close-btn').unbind('click').bind('click', function () {
+                $('.input-item').val('');
+                $('.close-btn').hide();
+                $('.search-btn').show();
+                $('.res-list').hide();
+                if (limark) {
+                    limark.remove();
+                }
+            })
+
+            //图层控制
+
+            $('.layer-control-btn').unbind('click').bind('click', function () {
+                if ($(".layer-controlbox-container").is(":hidden")) {
+                    $(".layer-controlbox-container").show(); 
+                } else {
+                    $(".layer-controlbox-container").hide(); 
+                }
+            })
+
+            $('.layer-switch-close').unbind('click').bind('click', function () {
+                $('.layer-controlbox-container').hide();
+            })
+
+            $('.layer-items a').unbind('click').bind('click', function () {
+                $('.layer-items a').map(function (item) {
+                    $(this).removeClass('active');
+                })
+                $(this).addClass('active');
+                var layerid = $(this).attr('id');
+                ChangeBaseLayer(layerid)
+            })
+
+
+
+        })
+        function AMapInit() {
+            var mapObj = new AMap.Map('containerAmap');
+            AMap.plugin('AMap.Geolocation', function () {
+                var geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,//是否使用高精度定位，默认:true
+                    timeout: 10000,          //超过10秒后停止定位，默认：5s
+                    buttonPosition: 'RB',    //定位按钮的停靠位置
+                    buttonOffset: new AMap.Pixel(10, 20),//定位按钮与设置的停靠位置的偏移量，默认：Pixel(10, 20)
+                    zoomToAccuracy: true,   //定位成功后是否自动调整地图视野到定位点
+
+                });
+                mapObj.addControl(geolocation);
+                geolocation.getCurrentPosition(function (status, result) {
+                    if (status == 'complete') {
+                        onComplete(result)
+                    } else {
+                        onError(result)
+                    }
+                });
+            });
+            //解析定位结果
+            function onComplete(data) {
+                var myIcon = L.icon({
+                    iconUrl: "images/location.png",
+                    iconSize: [48, 48]
+                });
+                console.log(data.position);
+                var position = [data.position.lat + 0.00252, data.position.lng - 0.00552];
+                console.log(position);
+                L.marker(position, { icon: myIcon }).addTo(map);
+                map.setZoom(18)
+                map.flyTo(position);
+            }
+            //解析定位错误信息
+            function onError(data) {
+                console.log(data.message);
+            }
+        }
+
+        function IpLocation() {
+            $.ajax({
+                url: 'http://api.map.baidu.com/location/ip?ak=fIlqxzzodQemThhGupxVIjuVPhukyf7e&coor=gcj02',
+                async: false,
+                dataType: 'jsonp',
+                success: function (res) {
+                    var position = [Number(res.content.point.y), Number(res.content.point.x)];
+                    map.setZoom(12)
+                    map.flyTo(position);
+                },
+                err: function (a) { }
+            });
+        }
+
+        function LeafletMapInit() {
+
+            map = L.map('map', {
+                attributionControl: false,
+                center: [30.57538875, 114.3096386],
+                zoom: 12,
+                layers: baselayer
+            });
+
+            map.zoomControl.setPosition('bottomright')
+            map.on('click', function (e) {
+
+            });
+
+            IpLocation();
+        }
+
+        function ChangeBaseLayer(layerid) {
+            var _layer = LayerConfig[layerid];
+            if (_layer != baselayer) {
+                if (baselayer.length > 1) {
+                    baselayer.map(function (layer) {
+                        map.removeLayer(layer);
+                    })
+                }
+                if (_layer.length > 1) {
+                    _layer.map(function (layer) {
+                        map.addLayer(layer);
+                        layer.bringToBack();
+                    })
+                }
+                map.fire("baselayerchange", _layer);
+                baselayer = _layer;
+            }
+        }
+
+        function QueryTask(url, option, callfn) {
+            var filter = GetQueryString(option);
+            url = url + filter;
+            $.ajax({ url: url, async: false, dataType: 'json', success: function (e) { if (callfn) callfn(e) }, err: function (a) { } });
+        }
+
+        function GetQueryString(option) {
+            var queryString = '/search?postStr={';
+            var condition = {
+                keyWord: option.keyWord || '超市',
+                level: option.level || '11',
+                mapBound: option.mapBound || '116.04577,39.70307,116.77361,40.09583',
+                queryType: option.queryType || '2',
+                count: option.count || '10',
+                start: option.start || '0'
+            };
+            for (var p in condition) {
+                if (p == "start") {
+                    queryString += '"' + p + '":"' + condition[p] + '"';
+                } else {
+                    queryString += '"' + p + '":"' + condition[p] + '",';
+                }
+            }
+            queryString += "}&type=query&tk=" + option.ak + "&f=pjson";
+            return queryString;
+        }
+
+        function QueryPOI(text) {
+            //http://lbs.tianditu.gov.cn/server/search.html
+            var url = 'http://api.tianditu.gov.cn';
+            var zoom = map.getZoom();
+            var bound = map.getBounds();
+            console.log(bound);
+            var mapBound = bound._southWest.lng + "," + bound._southWest.lat + "," + bound._northEast.lng + "," + bound._northEast.lat;
+            var option = {
+                keyWord: text,
+                level: zoom,
+                mapBound: mapBound,
+                ak: '1072d95046f18e67463ce40d645a9b8d'
+            };
+            QueryTask(url, option, function (res) {
+                console.log(res);
+                if (res.count != "0") {
+                    if (res.pois.length > 0) {
+                        $('.search-btn').hide();
+                        $('.close-btn').show();
+                        $('.res-list').show();
+                        var html = '<ul class="res-list-ul">';
+                        for (var i = 0; i < res.pois.length; i++) {
+                            html += '<li class="res-list-li" index="' + i + '" title="' + res.pois[i].name + '">' + res.pois[i].name + '</li>'
+                        }
+                        html += '</ul>'
+                        $('.res-list').empty().html(html);
+                        $('.res-list')[0].data = res.pois;
+                        $('.res-list ul li').click(LocationResLi);
+                        $('.res-list ul li').hover(HldresLi, RemoveHldresLi);
+                    }
+                } else {
+                    alert('范围内没有poi,尝试扩大搜索范围')
+                }
+
+
+            })
+        }
+
+        function LocationResLi() {
+            if (limark) {
+                limark.remove();
+            }
+            var index = $(this).attr('index');
+            var data = $('.res-list')[0].data[index];
+            console.log(data);
+            var myIcon = L.icon({
+                iconUrl: "images/location_blue.png",
+                iconSize: [32, 46]
+            });
+            var lonlat = data.lonlat.split(' ');
+            var position = [Number(lonlat[1]), Number(lonlat[0])];
+            console.log(position);
+            limark = L.marker(position, { icon: myIcon }).addTo(map);
+            map.flyTo(position);
+        }
+
+        function HldresLi() {
+            $(this).css('background', '#2aabd2');
+        }
+        //移出高亮
+        function RemoveHldresLi() {
+            $(this).css('background', '');
+        }
+    </script>
+
+</body>
+
+</html>
